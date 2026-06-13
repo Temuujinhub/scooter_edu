@@ -20,6 +20,20 @@ function randomKey(prefix: string): string {
 }
 
 async function main() {
+  // SEED_IF_EMPTY=true үед (Vercel build) — өгөгдөл аль хэдийн байвал алгасна.
+  // Ингэснээр production дахь хэрэглэгчийн өгөгдлийг устгахгүй.
+  if (process.env.SEED_IF_EMPTY === 'true') {
+    const existing = await prisma.course.count().catch(() => -1);
+    if (existing > 0) {
+      console.log(`⏭️  Seed алгаслаа (${existing} курс аль хэдийн байна)`);
+      return;
+    }
+    if (existing < 0) {
+      console.log('⏭️  Seed алгаслаа (DB бэлэн биш)');
+      return;
+    }
+  }
+
   console.log('🌱 Seed эхэлж байна...');
 
   // ── Хуучин өгөгдлийг цэвэрлэх (idempotent) ──
