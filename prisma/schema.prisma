@@ -1,0 +1,282 @@
+// ScooterEdu MN — Өгөгдлийн сангийн схем
+// Судалгааны баримтын 4.1 хэсгийн PostgreSQL хүснэгтүүд дээр үндэслэв.
+// Тестэд SQLite ашиглана (тэг тохиргоо). Production-д provider="postgresql" болгоно.
+//
+// Тэмдэглэл: SQLite нь enum дэмжихгүй тул статус талбаруудыг String-ээр
+// тодорхойлж, зөвшөөрөгдөх утгуудыг тайлбараар бичсэн. JSON өгөгдлийг
+// String (JSON-encoded) хэлбэрээр хадгална.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ── Хэрэглэгч ────────────────────────────────────────────────────
+model User {
+  id             String    @id @default(cuid())
+  phone          String    @unique // 8 оронтой Монгол дугаар
+  registerNumber String?   @unique // Регистр (2 үсэг + 8 тоо)
+  firstName      String
+  lastName       String?
+  birthDate      DateTime?
+  gender         String? // M | F
+  role           String    @default("STUDENT") // STUDENT | INSTRUCTOR | ADMIN
+  passwordHash   String? // зөвхөн ADMIN/INSTRUCTOR нэвтрэлтэд
+  ageVerified    Boolean   @default(false) // Хур (XYP)-ээр 18+ нас баталгаажсан эсэх
+  xypVerified    Boolean   @default(false) // Хур системээс мэдээлэл татагдсан эсэх
+  isTestUser     Boolean   @default(false) // Тестийн хялбар бүртгэлээр үүссэн эсэх
+  createdAt      DateTime  @default(now())
+
+  enrollments    Enrollment[]
+  moduleProgress ModuleProgress[]
+  examAttempts   ExamAttempt[]
+  practiceSessions PracticeSession[] @relation("StudentSessions")
+  instructorSessions PracticeSession[] @relation("InstructorSessions")
+  certificates   Certificate[]
+  rewardPoints   RewardPoint[]
+  payments       Payment[]
+  instructor     Instructor?
+  rentalLinks    RentalLink[]
+}
+
+// ── Курс ─────────────────────────────────────────────────────────
+model Course {
+  id            String   @id @default(cuid())
+  code          String   @unique // SCE-BASIC, SCE-FULL гэх мэт
+  titleMn       String
+  descriptionMn String
+  price         Int // ₮
+  durationHours Float
+  level         String   @default("Анхан шат") // Анхан шат | Бүрэн
+  coverImage    String? // /images/...
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  modules     Module[]
+  enrollments Enrollment[]
+}
+
+// ── Модуль (хичээл) ──────────────────────────────────────────────
+model Module {
+  id           String   @id @default(cuid())
+  courseId     String
+  course       Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  moduleNumber Int
+  titleMn      String
+  summaryMn    String // богино тайлбар
+  contentHtml  String // хичээлийн үндсэн агуулга (HTML)
+  keyPoints    String // гол санаанууд (JSON массив)
+  videoUrl     String? // HLS/MP4 эсвэл YouTube embed
+  durationMin  Int
+  sortOrder    Int      @default(0)
+  isActive     Boolean  @default(true)
+
+  progress  ModuleProgress[]
+  questions Question[]
+}
+
+// ── Шалгалтын асуулт сан ─────────────────────────────────────────
+model Question {
+  id            String  @id @default(cuid())
+  moduleId      String
+  module        Module  @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  moduleCode    String // M1 | M2 | M3 | M4 — шалгалтын хуваарилалтад
+  questionMn    String
+  options       String // JSON: [{key,text,isCorrect}]
+  explanationMn String
+  difficulty    String  @default("easy") // easy | medium | hard
+  tags          String  @default("[]") // JSON массив
+  isActive      Boolean @default(true)
+}
+
+// ── Курсийн бүртгэл ──────────────────────────────────────────────
+model Enrollment {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId    String
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  status      String    @default("PENDING_PAYMENT") // PENDING_PAYMENT | ACTIVE | COMPLETED
+  paymentId   String?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, courseId])
+}
+
+// ── Модулийн явц ─────────────────────────────────────────────────
+model ModuleProgress {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moduleId     String
+  module       Module    @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  status       String    @default("NOT_STARTED") // NOT_STARTED | IN_PROGRESS | COMPLETED
+  watchSeconds Int       @default(0)
+  quizScore    Int? // модулийн жижиг тестийн оноо (%)
+  completedAt  DateTime?
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([userId, moduleId])
+}
+
+// ── Шалгалтын оролдлого ──────────────────────────────────────────
+model ExamAttempt {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attemptNumber Int
+  questionIds   String // JSON массив — сонгогдсон 30 асуулт
+  answers       String    @default("{}") // JSON: {questionId: selectedKey}
+  score         Int? // зөв хариултын тоо (0-30)
+  percent       Int? // хувь
+  status        String    @default("IN_PROGRESS") // IN_PROGRESS | PASSED | FAILED
+  startedAt     DateTime  @default(now())
+  submittedAt   DateTime?
+  nextAttemptAt DateTime? // дараагийн оролдлого хийх боломжтой цаг
+}
+
+// ── Гэрээт жолооны курс (дадлагын талбай) ────────────────────────
+model DrivingSchool {
+  id             String   @id @default(cuid())
+  name           String
+  address        String
+  district       String
+  lat            Float?
+  lng            Float?
+  phone          String?
+  contractNumber String?
+  capacityPerDay Int      @default(20)
+  isActive       Boolean  @default(true)
+
+  sessions    PracticeSession[]
+  instructors Instructor[]
+}
+
+// ── Багш (дадлага хянагч) ────────────────────────────────────────
+model Instructor {
+  id            String  @id @default(cuid())
+  userId        String  @unique
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schoolId      String?
+  school        DrivingSchool? @relation(fields: [schoolId], references: [id])
+  licenseNumber String
+  qrToken       String  @unique // багшийн өвөрмөц токен
+  isVerified    Boolean @default(true)
+}
+
+// ── Практик дадлагын session ─────────────────────────────────────
+model PracticeSession {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation("StudentSessions", fields: [userId], references: [id], onDelete: Cascade)
+  instructorId  String?
+  instructor    User?     @relation("InstructorSessions", fields: [instructorId], references: [id])
+  schoolId      String
+  school        DrivingSchool @relation(fields: [schoolId], references: [id])
+  qrToken       String    @unique // нэг удаагийн QR токен
+  scheduledAt   DateTime
+  elements      String    @default("{}") // JSON: {A:bool,B:bool,...Z:bool}
+  status        String    @default("BOOKED") // BOOKED | IN_PROGRESS | COMPLETED | CANCELLED
+  startedAt     DateTime?
+  verifiedAt    DateTime?
+  createdAt     DateTime  @default(now())
+}
+
+// ── Дижитал сертификат ───────────────────────────────────────────
+model Certificate {
+  id               String    @id @default(cuid())
+  certNumber       String    @unique // SCE-YYYY-NNNNNN
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  examScore        Int? // хувь
+  practiceVerified Boolean   @default(false)
+  issuedAt         DateTime  @default(now())
+  expiresAt        DateTime
+  hash             String // SHA-256 баталгаажуулалтын hash
+  status           String    @default("ACTIVE") // ACTIVE | EXPIRED | REVOKED
+
+  rewards RewardPoint[]
+}
+
+// ── Хамтрагч E-Scooter / Түрээсийн компани ───────────────────────
+model Partner {
+  id              String   @id @default(cuid())
+  name            String
+  code            String   @unique // JET, TABO, ECOBIKE...
+  appName         String
+  apiKey          String   @unique
+  rewardPoints    Int      @default(500) // сертификатад өгөх оноо
+  discountPercent Int      @default(0)
+  logoColor       String   @default("#1B448A")
+  description     String   @default("")
+  scooterCount    String   @default("") // ~6,000 скүүтэр гэх мэт
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  rewards     RewardPoint[]
+  rentalLinks RentalLink[]
+}
+
+// ── Урамшуулалын оноо ────────────────────────────────────────────
+model RewardPoint {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  partnerId     String
+  partner       Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  certificateId String?
+  certificate   Certificate? @relation(fields: [certificateId], references: [id])
+  points        Int
+  actionType    String // training_completed | referral | bonus
+  createdAt     DateTime @default(now())
+}
+
+// ── Түрээсийн апп холболт (хэрэглэгч ↔ компани) ──────────────────
+model RentalLink {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  partnerId      String
+  partner        Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  externalUserId String? // тухайн апп дахь хэрэглэгчийн ID
+  status         String   @default("LINKED") // LINKED | PENDING | UNLINKED
+  rewardGranted  Boolean  @default(false)
+  linkedAt       DateTime @default(now())
+
+  @@unique([userId, partnerId])
+}
+
+// ── Төлбөр ───────────────────────────────────────────────────────
+model Payment {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId      String?
+  amount        Int
+  paymentMethod String    @default("QPAY") // QPAY | DUREM | TEST
+  providerRef   String? // QPay invoice_id
+  qrText        String? // QPay QR текст / deeplink
+  status        String    @default("PENDING") // PENDING | PAID | FAILED | REFUNDED
+  description   String    @default("")
+  paidAt        DateTime?
+  createdAt     DateTime  @default(now())
+}
+
+// ── OTP код (утасны баталгаажуулалт) ─────────────────────────────
+model OtpCode {
+  id        String   @id @default(cuid())
+  phone     String
+  code      String // 6 оронтой
+  purpose   String   @default("register") // register | login | reset
+  expiresAt DateTime
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([phone])
+}
