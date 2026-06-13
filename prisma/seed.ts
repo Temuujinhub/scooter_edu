@@ -35,6 +35,79 @@ async function seedPackages() {
   console.log(`✅ Багц: ${created} шинээр нэмэгдсэн (${packages.length - created} аль хэдийн байна)`);
 }
 
+// Дадлагад бэлэн демо суралцагч (практик хэсгийг шууд харахад).
+// Курс/модуль/багц байгаа тохиолдолд л ажиллана (live DB-д ч идэвхжинэ).
+async function seedDemoPractice(phone = '99091911') {
+  const course = await prisma.course.findFirst({
+    where: { code: 'SCE-FULL' },
+    include: { modules: true },
+  });
+  if (!course || course.modules.length === 0) return; // контент байхгүй бол алгасна
+  const standard = await prisma.package.findUnique({ where: { code: 'STANDARD' } });
+
+  let user = await prisma.user.findUnique({ where: { phone } });
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        phone,
+        firstName: 'Дэмо',
+        lastName: 'Суралцагч',
+        role: 'STUDENT',
+        ageVerified: true,
+        isTestUser: true,
+        birthDate: new Date('1998-01-01'),
+      },
+    });
+  }
+
+  // Стандарт багцаар идэвхтэй бүртгэл (дадлагатай)
+  const enr = await prisma.enrollment.findFirst({
+    where: { userId: user.id, courseId: course.id },
+  });
+  if (!enr) {
+    await prisma.enrollment.create({
+      data: {
+        userId: user.id,
+        courseId: course.id,
+        packageId: standard?.id,
+        packageCode: 'STANDARD',
+        includesPractice: true,
+        amountPaid: standard?.price ?? 29900,
+        status: 'ACTIVE',
+      },
+    });
+  }
+
+  // Бүх модулийг дуусгасан
+  for (const m of course.modules) {
+    await prisma.moduleProgress.upsert({
+      where: { userId_moduleId: { userId: user.id, moduleId: m.id } },
+      create: { userId: user.id, moduleId: m.id, status: 'COMPLETED', completedAt: new Date() },
+      update: { status: 'COMPLETED' },
+    });
+  }
+
+  // Шалгалт тэнцсэн (практик нээгдэнэ)
+  const passed = await prisma.examAttempt.findFirst({
+    where: { userId: user.id, status: 'PASSED' },
+  });
+  if (!passed) {
+    await prisma.examAttempt.create({
+      data: {
+        userId: user.id,
+        attemptNumber: 1,
+        questionIds: '[]',
+        answers: '{}',
+        score: 28,
+        percent: 93,
+        status: 'PASSED',
+        submittedAt: new Date(),
+      },
+    });
+  }
+  console.log(`✅ Дадлагад бэлэн демо: ${phone} (Стандарт багц, шалгалт тэнцсэн)`);
+}
+
 async function main() {
   // SEED_IF_EMPTY=true үед (Vercel build):
   //  • Багцыг үргэлж upsert хийнэ (шинэ багц аль хэдийн seed хийсэн DB-д нэмэгдэнэ)
@@ -46,6 +119,7 @@ async function main() {
       return;
     }
     await seedPackages();
+    await seedDemoPractice(); // 99091911-ийг дадлагад бэлэн болгох (live DB-д ч)
     if (existing > 0) {
       console.log(`⏭️  Контент seed алгаслаа (${existing} курс аль хэдийн байна)`);
       return;
@@ -211,6 +285,9 @@ async function main() {
     },
   });
   console.log(`✅ Демо суралцагч: ${demo.phone}`);
+
+  // Дадлагад бэлэн демо (99091911)
+  await seedDemoPractice();
 
   console.log('🎉 Seed амжилттай дууслаа!');
   console.log('');

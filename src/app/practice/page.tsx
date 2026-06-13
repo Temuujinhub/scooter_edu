@@ -8,7 +8,7 @@ import { Card, Button, Spinner, Badge, Alert, Input, Label } from '@/components/
 import { QrCode } from '@/components/qr-code';
 import { api } from '@/lib/client';
 import { formatDate } from '@/lib/utils';
-import { MapPin, Phone, CheckCircle2, Circle, QrCode as QrIcon, Zap, Lock } from 'lucide-react';
+import { MapPin, Phone, CheckCircle2, Circle, QrCode as QrIcon, Zap, Lock, ScanLine, UserCheck, ShieldCheck, CalendarCheck } from 'lucide-react';
 
 interface School {
   id: string;
@@ -73,6 +73,8 @@ export default function PracticePage() {
       <div className="space-y-6">
         {error && <Alert variant="error">{error}</Alert>}
 
+        <PracticeExplainer />
+
         {!canBook ? (
           <Alert variant="info">
             <div className="flex items-center gap-2">
@@ -114,6 +116,46 @@ export default function PracticePage() {
         )}
       </div>
     </AppShell>
+  );
+}
+
+// Практик баталгаажуулалтын логикийг тайлбарлах хэсэг
+function PracticeExplainer() {
+  const steps = [
+    { icon: CalendarCheck, title: 'Дадлага захиалах', desc: 'Гэрээт жолооны курс сонгож, очих өдрөө товлоно. Систем нэг удаагийн QR токен үүсгэнэ.' },
+    { icon: QrIcon, title: 'QR код авах', desc: 'Таны утсан дээр QR код гарна. Үүнийг дадлагын талбайд очиж багшид үзүүлнэ.' },
+    { icon: ScanLine, title: 'Багш QR скан хийх', desc: 'Тухайн жолооны курст ажилладаг бүртгэлтэй багш (INSTRUCTOR эрх) мобайлаараа QR-ийг уншуулж, таны мэдээллийг нээнэ.' },
+    { icon: UserCheck, title: 'Элемент бүрийг баталгаажуулах', desc: 'Багш A–G элемент (эхлэх/зогсох, эргэлт, саад давах г.м) тус бүрийг бодит дадлага дээр шалгаж тэмдэглэнэ.' },
+    { icon: ShieldCheck, title: 'Гэрчилгээ автоматаар', desc: 'Бүх элемент тэнцэхэд session дуусаж, дижитал гэрчилгээ автоматаар үүснэ. Нэг удаагийн токен, серверийн цаг бүртгэлтэй тул хуурамчлах боломжгүй.' },
+  ];
+  return (
+    <Card className="overflow-hidden">
+      <div className="border-b border-slate-100 bg-brand-50/50 px-5 py-3">
+        <h3 className="flex items-center gap-2 text-sm font-bold text-brand-800">
+          <ShieldCheck className="h-4 w-4" /> Практик дадлага хэрхэн баталгаажих вэ?
+        </h3>
+      </div>
+      <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-5">
+        {steps.map((s, i) => (
+          <div key={i} className="relative">
+            <div className="mb-2 flex items-center gap-2">
+              <div className="grid h-8 w-8 place-items-center rounded-lg bg-brand-100 text-brand-700">
+                <s.icon className="h-4 w-4" />
+              </div>
+              <span className="text-xs font-bold text-slate-400">{i + 1}</span>
+            </div>
+            <div className="text-sm font-semibold text-slate-900">{s.title}</div>
+            <div className="mt-0.5 text-xs text-slate-500">{s.desc}</div>
+          </div>
+        ))}
+      </div>
+      <div className="border-t border-slate-100 bg-slate-50 px-5 py-3 text-xs text-slate-500">
+        <strong className="text-slate-700">Багшийн тухай:</strong> Дадлага хянагч багш нь жолооны курсын
+        бүртгэлтэй ажилтан бөгөөд платформд <span className="font-mono">INSTRUCTOR</span> эрхээр нэвтэрч,
+        «QR баталгаажуулалт» хэсгээс суралцагчийн QR-ийг уншуулж дадлагыг баталгаажуулна. Тест эрх:
+        <span className="font-mono"> 99001111 / teacher123</span>.
+      </div>
+    </Card>
   );
 }
 
