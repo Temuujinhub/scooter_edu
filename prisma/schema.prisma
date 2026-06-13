@@ -12,8 +12,12 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  // Runtime query-д pooled холболт (PgBouncer) ашиглана.
+  url       = env("DATABASE_URL")
+  // Schema push / migration-д direct (unpooled) холболт хэрэгтэй.
+  // Neon Vercel интеграци DATABASE_URL_UNPOOLED-г автоматаар тохируулна.
+  directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
 // ── Хэрэглэгч ────────────────────────────────────────────────────
