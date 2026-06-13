@@ -1,6 +1,9 @@
 import { prisma } from '@/lib/prisma';
 import { ok } from '@/lib/api';
 
+// Динамик — DB-ээс үргэлж шинээр уншина (статик кэшлэхгүй)
+export const dynamic = 'force-dynamic';
+
 // GET /api/courses — Идэвхтэй курсуудын жагсаалт
 export async function GET() {
   const courses = await prisma.course.findMany({

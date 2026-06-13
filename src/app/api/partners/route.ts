@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import { ok } from '@/lib/api';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/partners — Хамтрагч (түрээсийн) компаниудын нийтийн жагсаалт
 export async function GET() {
   const partners = await prisma.partner.findMany({
