@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Хичээлийн агуулгын загвар (module contentHtml) */
+.prose-mn {
+  color: #1f2937;
+  line-height: 1.75;
+}
+.prose-mn h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1b448a;
+  margin-top: 1.75rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 2px solid #eef3fb;
+}
+.prose-mn h3:first-child {
+  margin-top: 0;
+}
+.prose-mn p {
+  margin-bottom: 0.9rem;
+}
+.prose-mn ul {
+  list-style: disc;
+  padding-left: 1.4rem;
+  margin-bottom: 1rem;
+}
+.prose-mn li {
+  margin-bottom: 0.4rem;
+}
+.prose-mn strong {
+  color: #15306b;
+  font-weight: 600;
+}
+.prose-mn table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0 1.4rem;
+  font-size: 0.92rem;
+  overflow: hidden;
+  border-radius: 0.6rem;
+  border: 1px solid #e5e7eb;
+}
+.prose-mn th {
+  background: #1b448a;
+  color: #fff;
+  text-align: left;
+  padding: 0.6rem 0.8rem;
+  font-weight: 600;
+}
+.prose-mn td {
+  padding: 0.55rem 0.8rem;
+  border-top: 1px solid #eef0f4;
+  vertical-align: top;
+}
+.prose-mn tr:nth-child(even) td {
+  background: #f9fafb;
+}
+
+/* Анимэйшнтай суурь градиент */
+.hero-gradient {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(58, 96, 189, 0.18), transparent 40%),
+    radial-gradient(circle at 85% 15%, rgba(16, 185, 129, 0.14), transparent 38%),
+    linear-gradient(160deg, #0d1d44 0%, #15306b 45%, #1b448a 100%);
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #c7d2e8;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a8d0;
+}

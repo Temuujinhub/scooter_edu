@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 220" fill="none">
+  <defs>
+    <linearGradient id="cc" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b448a"/>
+      <stop offset="1" stop-color="#15306b"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="220" rx="16" fill="url(#cc)"/>
+  <circle cx="330" cy="40" r="60" fill="#3a60bd" opacity="0.4"/>
+  <circle cx="60" cy="190" r="50" fill="#10b981" opacity="0.25"/>
+  <g transform="translate(150 70)">
+    <circle cx="14" cy="70" r="13" fill="#fff" opacity="0.9"/>
+    <circle cx="92" cy="70" r="13" fill="#fff" opacity="0.9"/>
+    <path d="M14 70 H92 M92 70 V20 H110" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M14 70 L52 22 H70" stroke="#10b981" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="30" y="50" fill="#bcd0f5" font-family="Arial" font-size="13" font-weight="bold" letter-spacing="2">SCOOTEREDU MN</text>
+</svg>
