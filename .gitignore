@@ -11,12 +11,6 @@ next-env.d.ts
 # production
 /build
 
-# database (SQLite — seed-ээр дахин үүснэ)
-*.db
-*.db-journal
-/prisma/dev.db
-/prisma/dev.db-journal
-
 # env — .env нь тест default утгуудтай тул репод хадгална.
 # Бодит production нууц түлхүүрүүдийг .env.local-д хийнэ (git-д орохгүй).
 .env*.local

@@ -1,0 +1,27 @@
+# Локал хөгжүүлэлтэд зориулсан PostgreSQL.
+# Ажиллуулах:  docker compose up -d
+# Дараа нь:    npm run setup && npm run dev
+#
+# (Vercel дээр энэ хэрэггүй — Neon/Vercel Postgres ашиглаж DATABASE_URL тохируулна.)
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: scooteredu_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: scooteredu
+    ports:
+      - '5432:5432'
+    volumes:
+      - scooteredu_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  scooteredu_pgdata:

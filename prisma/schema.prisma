@@ -1,17 +1,18 @@
 // ScooterEdu MN — Өгөгдлийн сангийн схем
 // Судалгааны баримтын 4.1 хэсгийн PostgreSQL хүснэгтүүд дээр үндэслэв.
-// Тестэд SQLite ашиглана (тэг тохиргоо). Production-д provider="postgresql" болгоно.
 //
-// Тэмдэглэл: SQLite нь enum дэмжихгүй тул статус талбаруудыг String-ээр
-// тодорхойлж, зөвшөөрөгдөх утгуудыг тайлбараар бичсэн. JSON өгөгдлийг
-// String (JSON-encoded) хэлбэрээр хадгална.
+// PostgreSQL ашиглана (Vercel/Neon serverless-д бүрэн ажиллана).
+// Локалд: docker compose up -d (эсвэл Neon үнэгүй DB) → npm run setup.
+//
+// Тэмдэглэл: статус талбаруудыг String-ээр (зөвшөөрөгдөх утгуудыг тайлбараар),
+// JSON өгөгдлийг String (JSON-encoded) хэлбэрээр хадгална — кодын нийцлийн төлөө.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 

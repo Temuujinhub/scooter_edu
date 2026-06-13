@@ -28,21 +28,27 @@
 
 ## 🚀 Хурдан эхлэх
 
+Систем **PostgreSQL** ашигладаг (Vercel/Neon serverless-д бүрэн ажиллана).
+Локалд хоёр сонголт:
+
+### Сонголт A — Docker (хамгийн хялбар)
+
 ```bash
-# 1. Хамаарал суулгах
+docker compose up -d      # PostgreSQL асаах (default DATABASE_URL-тэй нийцнэ)
 npm install
-
-# 2. Өгөгдлийн сан бэлдэх (Prisma client + SQLite + seed контент)
-npm run setup
-
-# 3. Сервер асаах
-npm run dev
+npm run setup             # Prisma client + хүснэгт үүсгэх + seed контент
+npm run dev               # http://localhost:3000
 ```
 
-Дараа нь хөтөч дээр **http://localhost:3000** нээнэ.
+### Сонголт B — Neon (үнэгүй cloud Postgres, суулгац шаардахгүй)
 
-> 💡 `.env` файл нь тест default утгуудтай бэлэн ирдэг тул нэмэлт тохиргоо
-> шаардлагагүй. Шууд ажиллана.
+1. [neon.tech](https://neon.tech) дээр үнэгүй DB үүсгэнэ (2 минут).
+2. Холболтын мөрийг `.env` доtorх `DATABASE_URL`-д хийнэ
+   (`postgresql://...@ep-xxx.neon.tech/neondb?sslmode=require`).
+3. `npm install && npm run setup && npm run dev`
+
+> 💡 `.env` файл нь бусад тест default утгуудтай (JWT, TEST_MODE гэх мэт) бэлэн
+> ирдэг тул зөвхөн `DATABASE_URL`-аа тохируулахад л хангалттай.
 
 ### 🔑 Тест эрхүүд
 
@@ -77,7 +83,7 @@ npx tsx scripts/e2e-test.ts
 ## 🏗️ Технологийн стек
 
 - **Next.js 14** (App Router) + **TypeScript** + **Tailwind CSS**
-- **Prisma ORM** + **SQLite** (тестэд тэг тохиргоо; production-д PostgreSQL руу солих боломжтой)
+- **Prisma ORM** + **PostgreSQL** (Vercel/Neon serverless-д бэлэн)
 - **jose** (JWT, httpOnly cookie нэвтрэлт), **bcryptjs** (нууц үг)
 - **qrcode** (QR код), **zod** (баталгаажуулалт), **lucide-react** (icon)
 
@@ -145,20 +151,28 @@ prisma/
 
 ---
 
-## 🌐 Production-д шилжүүлэх
+## 🌐 Vercel дээр deploy хийх
 
-1. `.env.local` үүсгэж бодит нууц утгуудыг оруулна (`TEST_MODE=false`).
-2. PostgreSQL руу шилжих: `prisma/schema.prisma` доtор `provider = "postgresql"`,
-   `DATABASE_URL`-г Postgres холболт болгоно. `npx prisma migrate deploy`.
-3. SMS gateway (Mobicom/Unitel), QPay, XYP-ийн бодит түлхүүрүүдийг холбоно.
-4. `npm run build && npm start`.
+1. **Neon (эсвэл Vercel Postgres)** дээр production DB үүсгэнэ.
+2. Vercel төслийн **Environment Variables**-д тохируулна:
+   - `DATABASE_URL` — Neon-ийн холболтын мөр
+   - `JWT_SECRET` — санамсаргүй 32+ тэмдэгт
+   - `TEST_MODE=false` (production-д)
+   - `QPAY_*`, `XYP_*`, `SMS_*` — бодит түлхүүрүүд (хэрэгцээгээр)
+3. Хүснэгт + анхны контентыг production DB-д **нэг удаа** үүсгэнэ
+   (локалаас Neon URL рүү чиглүүлж): `npm run setup`.
+4. Vercel автоматаар build хийнэ (`prisma generate && next build`). Дараагийн
+   push бүрт автоматаар дахин deploy хийгдэнэ.
+
+> SMS gateway (Mobicom/Unitel), QPay, XYP-ийн бодит нэгтгэлийг идэвхжүүлэхдээ
+> `TEST_MODE=false` болгож, тус тусын түлхүүрүүдийг тохируулна.
 
 ---
 
 ## 📊 Системийн төлөв
 
 ✅ Build: 62 route амжилттай
-✅ E2E тест: 34/34 шалгуур (бүртгэл → төлбөр → сургалт → шалгалт → дадлага → сертификат → урамшуулал → Хур → хамтрагч API → админ)
+✅ E2E тест: 34/34 шалгуур — **PostgreSQL дээр баталгаажсан** (бүртгэл → төлбөр → сургалт → шалгалт → дадлага → сертификат → урамшуулал → Хур → хамтрагч API → админ)
 
 ---
 
