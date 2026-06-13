@@ -17,13 +17,13 @@ interface InitRes {
 
 // QPay төлбөрийн модал — invoice үүсгэж QR харуулна, статус хянана.
 export function PaymentModal({
-  courseId,
-  courseTitle,
+  packageCode,
+  title,
   onClose,
   onPaid,
 }: {
-  courseId: string;
-  courseTitle: string;
+  packageCode: string;
+  title: string;
   onClose: () => void;
   onPaid: () => void;
 }) {
@@ -33,10 +33,10 @@ export function PaymentModal({
   const [checking, setChecking] = useState(false);
 
   useEffect(() => {
-    api<InitRes>('/api/payments/qpay/init', { method: 'POST', json: { courseId } })
+    api<InitRes>('/api/payments/qpay/init', { method: 'POST', json: { packageCode } })
       .then(setInvoice)
       .catch((e) => setError(e.message));
-  }, [courseId]);
+  }, [packageCode]);
 
   // Статусыг тогтмол шалгах (production webhook эсвэл QPay)
   useEffect(() => {
@@ -96,7 +96,7 @@ export function PaymentModal({
           </div>
         ) : (
           <div className="mt-4 text-center">
-            <p className="text-sm text-slate-500">{courseTitle}</p>
+            <p className="text-sm text-slate-500">{title}</p>
             <p className="mt-1 text-3xl font-extrabold text-brand-800">{formatMnt(invoice.amount)}</p>
 
             <div className="mt-5 flex justify-center">

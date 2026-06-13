@@ -5,8 +5,17 @@ import { prisma } from './prisma';
 import { CERT_VALIDITY_YEARS, EXAM_CONFIG } from './constants';
 import { generateCertNumber, generateCertHash } from './certificate';
 
+// Сургалтын үндсэн curriculum (4 модультай курс). Багцууд үүн рүү бүртгэнэ.
+export const CURRICULUM_CODE = 'SCE-FULL';
+
+export async function getCurriculumCourse() {
+  return prisma.course.findFirst({ where: { code: CURRICULUM_CODE } });
+}
+
 export interface JourneyState {
   enrolled: boolean;
+  packageCode: string | null;
+  includesPractice: boolean;
   modulesTotal: number;
   modulesCompleted: number;
   allModulesDone: boolean;
@@ -51,20 +60,24 @@ export async function getJourneyState(userId: string): Promise<JourneyState> {
     orderBy: { issuedAt: 'desc' },
   });
 
+  const includesPractice = enrollment?.includesPractice ?? true;
   const allModulesDone = modulesTotal > 0 && completedProgress >= modulesTotal;
   const examPassed = !!passedExam;
-  const practiceDone = !!donePractice;
+  // Basic багц (дадлагагүй) бол практик алхам шаардлагагүй
+  const practiceDone = includesPractice ? !!donePractice : true;
 
   let nextStep: JourneyState['nextStep'] = 'enroll';
   if (cert) nextStep = 'done';
   else if (!enrollment || enrollment.status === 'PENDING_PAYMENT') nextStep = 'enroll';
   else if (!allModulesDone) nextStep = 'learn';
   else if (!examPassed) nextStep = 'exam';
-  else if (!practiceDone) nextStep = 'practice';
+  else if (includesPractice && !donePractice) nextStep = 'practice';
   else nextStep = 'done';
 
   return {
     enrolled: !!enrollment && enrollment.status !== 'PENDING_PAYMENT',
+    packageCode: enrollment?.packageCode ?? null,
+    includesPractice,
     modulesTotal,
     modulesCompleted: completedProgress,
     allModulesDone,
@@ -76,8 +89,12 @@ export async function getJourneyState(userId: string): Promise<JourneyState> {
   };
 }
 
-// Сертификат олгох (практик дадлага бүрэн баталгаажсаны дараа)
-export async function issueCertificate(userId: string) {
+// Сертификат олгох. practiceVerified=false бол онлайн-only (Basic багц).
+export async function issueCertificate(
+  userId: string,
+  opts?: { practiceVerified?: boolean }
+) {
+  const practiceVerified = opts?.practiceVerified ?? true;
   // Аль хэдийн идэвхтэй сертификаттай бол давхар үүсгэхгүй
   const existing = await prisma.certificate.findFirst({
     where: { userId, status: 'ACTIVE' },
@@ -106,7 +123,7 @@ export async function issueCertificate(userId: string) {
       certNumber,
       userId,
       examScore: passedExam?.percent ?? null,
-      practiceVerified: true,
+      practiceVerified,
       issuedAt,
       expiresAt,
       hash,
@@ -160,7 +177,7 @@ export async function completePayment(paymentId: string) {
   if (payment.courseId) {
     await prisma.enrollment.updateMany({
       where: { userId: payment.userId, courseId: payment.courseId },
-      data: { status: 'ACTIVE', paymentId: payment.id },
+      data: { status: 'ACTIVE', paymentId: payment.id, amountPaid: payment.amount },
     });
   }
 

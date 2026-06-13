@@ -12,6 +12,7 @@ import {
   BarChart3,
   CreditCard,
   QrCode,
+  Tags,
 } from 'lucide-react';
 import type { NavItem } from './app-shell';
 
@@ -28,6 +29,7 @@ export const adminNav: NavItem[] = [
   { href: '/admin', label: 'Хяналтын самбар', icon: LayoutDashboard },
   { href: '/admin/users', label: 'Хэрэглэгчид', icon: Users },
   { href: '/admin/courses', label: 'Курс ба модуль', icon: GraduationCap },
+  { href: '/admin/packages', label: 'Үнийн багцууд', icon: Tags },
   { href: '/admin/questions', label: 'Асуултын сан', icon: HelpCircle },
   { href: '/admin/partners', label: 'Хамтрагчид', icon: Building2 },
   { href: '/admin/certificates', label: 'Гэрчилгээ', icon: Award },

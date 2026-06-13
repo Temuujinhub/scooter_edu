@@ -5,6 +5,7 @@ import { ok, fail } from '@/lib/api';
 import { requireAuth } from '@/lib/auth';
 import { EXAM_CONFIG } from '@/lib/constants';
 import { safeJson } from '@/lib/utils';
+import { issueCertificate, getCurriculumCourse } from '@/lib/services';
 
 const schema = z.object({
   attemptId: z.string(),
@@ -82,6 +83,21 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  // Дадлага шаардахгүй багц (Basic) — тэнцмэгц сертификат шууд олгоно.
+  let certificate: { certNumber: string } | null = null;
+  if (passed) {
+    const course = await getCurriculumCourse();
+    const enrollment = course
+      ? await prisma.enrollment.findFirst({
+          where: { userId: session!.sub, courseId: course.id },
+        })
+      : null;
+    if (enrollment && !enrollment.includesPractice) {
+      const cert = await issueCertificate(session!.sub, { practiceVerified: false });
+      certificate = { certNumber: cert.certNumber };
+    }
+  }
+
   return ok({
     passed,
     score: correct,
@@ -90,5 +106,6 @@ export async function POST(req: NextRequest) {
     passScore: EXAM_CONFIG.passScore,
     nextAttemptAt,
     review,
+    certificate,
   });
 }

@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { SiteNav } from '@/components/site-nav';
 import { SiteFooter } from '@/components/site-footer';
 import { ScooterIcon } from '@/components/brand-logo';
-import { formatMnt } from '@/lib/utils';
+import { formatMnt, safeJson } from '@/lib/utils';
 import {
   ShieldCheck,
   Smartphone,
@@ -39,8 +39,8 @@ const journey = [
 ];
 
 export default async function HomePage() {
-  const [courses, partners] = await Promise.all([
-    prisma.course.findMany({ where: { isActive: true }, orderBy: { sortOrder: 'asc' } }),
+  const [packages, partners] = await Promise.all([
+    prisma.package.findMany({ where: { isActive: true }, orderBy: { sortOrder: 'asc' } }),
     prisma.partner.findMany({ where: { isActive: true }, orderBy: { createdAt: 'asc' } }),
   ]);
 
@@ -224,40 +224,101 @@ export default async function HomePage() {
       <section id="pricing" className="bg-slate-100 py-20">
         <div className="mx-auto max-w-6xl px-4">
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">Үнийн санал</h2>
-            <p className="mt-3 text-slate-600">Ил тод, нэг удаагийн төлбөр. Нуугдмал зардалгүй.</p>
+            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">Үнийн багцууд</h2>
+            <p className="mt-3 text-slate-600">
+              Хэрэгцээндээ тохирох багцаа сонгоорой. Ил тод, нуугдмал зардалгүй.
+            </p>
           </div>
-          <div className="mx-auto mt-12 grid max-w-3xl gap-6 sm:grid-cols-2">
-            {courses.map((c, i) => (
-              <div
-                key={c.id}
-                className={`relative rounded-2xl border bg-white p-7 shadow-sm ${
-                  i === 0 ? 'border-brand-300 ring-2 ring-brand-200' : 'border-slate-200'
-                }`}
-              >
-                {i === 0 && (
-                  <span className="absolute -top-3 left-7 rounded-full bg-accent-500 px-3 py-1 text-xs font-bold text-white">
-                    Эрэлттэй
-                  </span>
-                )}
-                <h3 className="text-lg font-bold text-slate-900">{c.titleMn}</h3>
-                <div className="mt-3 flex items-baseline gap-1">
-                  <span className="text-4xl font-extrabold text-brand-800">{formatMnt(c.price)}</span>
-                </div>
-                <p className="mt-3 text-sm text-slate-600">{c.descriptionMn}</p>
-                <ul className="mt-5 space-y-2 text-sm text-slate-700">
-                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-accent-600" /> 4 модуль онлайн хичээл</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-accent-600" /> Онлайн шалгалт (30 асуулт)</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-accent-600" /> {c.level === 'Бүрэн' ? 'Практик дадлага + гэрчилгээ' : 'Дижитал гэрчилгээ'}</li>
-                </ul>
-                <Link
-                  href="/register"
-                  className="mt-6 flex h-11 items-center justify-center rounded-xl bg-brand-800 font-semibold text-white transition hover:bg-brand-900"
-                >
-                  Сонгох
-                </Link>
-              </div>
-            ))}
+
+          {/* Хувь хүний багцууд */}
+          <div className="mt-12 grid gap-6 lg:grid-cols-3">
+            {packages
+              .filter((p) => p.enrollable)
+              .map((p) => {
+                const features = safeJson<string[]>(p.features, []);
+                const featured = p.badge === 'Эрэлттэй';
+                return (
+                  <div
+                    key={p.id}
+                    className={`relative flex flex-col rounded-2xl border bg-white p-7 shadow-sm ${
+                      featured ? 'border-brand-400 ring-2 ring-brand-200' : 'border-slate-200'
+                    }`}
+                  >
+                    {p.badge && (
+                      <span
+                        className={`absolute -top-3 left-7 rounded-full px-3 py-1 text-xs font-bold text-white ${
+                          p.badge === 'Шинэ' ? 'bg-brand-600' : 'bg-accent-500'
+                        }`}
+                      >
+                        {p.badge}
+                      </span>
+                    )}
+                    <h3 className="text-lg font-bold text-slate-900">{p.name}</h3>
+                    <div className="mt-3 flex items-baseline gap-1">
+                      <span className="text-4xl font-extrabold text-brand-800">
+                        {formatMnt(p.price)}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-sm text-slate-600">{p.description}</p>
+                    <ul className="mt-5 flex-1 space-y-2 text-sm text-slate-700">
+                      {features.map((f) => (
+                        <li key={f} className="flex items-start gap-2">
+                          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-accent-600" /> {f}
+                        </li>
+                      ))}
+                    </ul>
+                    <Link
+                      href="/register"
+                      className={`mt-6 flex h-11 items-center justify-center rounded-xl font-semibold text-white transition ${
+                        featured ? 'bg-brand-800 hover:bg-brand-900' : 'bg-slate-800 hover:bg-slate-900'
+                      }`}
+                    >
+                      Сонгох
+                    </Link>
+                  </div>
+                );
+              })}
+          </div>
+
+          {/* Байгууллага / API багцууд */}
+          <div className="mt-6 grid gap-6 md:grid-cols-2">
+            {packages
+              .filter((p) => !p.enrollable)
+              .map((p) => {
+                const features = safeJson<string[]>(p.features, []);
+                return (
+                  <div
+                    key={p.id}
+                    className="flex flex-col rounded-2xl border border-slate-200 bg-gradient-to-br from-brand-950 to-brand-800 p-7 text-white shadow-sm"
+                  >
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-bold">{p.name}</h3>
+                      {p.badge && (
+                        <span className="rounded-full bg-accent-500 px-2 py-0.5 text-xs font-bold">
+                          {p.badge}
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-2 text-2xl font-extrabold text-accent-300">
+                      {p.price > 0 ? p.priceLabel || formatMnt(p.price) : p.priceLabel || 'Холбоо барих'}
+                    </div>
+                    <p className="mt-2 text-sm text-brand-100/90">{p.description}</p>
+                    <ul className="mt-4 flex-1 space-y-1.5 text-sm text-brand-100/90">
+                      {features.map((f) => (
+                        <li key={f} className="flex items-start gap-2">
+                          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-accent-400" /> {f}
+                        </li>
+                      ))}
+                    </ul>
+                    <a
+                      href="mailto:info@scooteredu.mn"
+                      className="mt-6 flex h-11 items-center justify-center rounded-xl border border-white/25 bg-white/10 font-semibold text-white transition hover:bg-white/20"
+                    >
+                      Холбоо барих
+                    </a>
+                  </div>
+                );
+              })}
           </div>
         </div>
       </section>

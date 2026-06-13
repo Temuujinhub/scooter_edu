@@ -99,17 +99,43 @@ model Question {
   isActive      Boolean @default(true)
 }
 
+// ── Үнийн багц (Pricing package) ─────────────────────────────────
+model Package {
+  id               String   @id @default(cuid())
+  code             String   @unique // BASIC | STANDARD | PRO | B2B | API
+  name             String
+  price            Int // ₮ (0 = "Холбоо барих")
+  priceLabel       String   @default("") // "25,000₮/хүн", "Жилийн лиценз"
+  tier             String   @default("STANDARD")
+  includesPractice Boolean  @default(true) // практик дадлага багтсан эсэх
+  practiceSessions Int      @default(1) // дадлагын тооны эрх
+  includesCard     Boolean  @default(false) // биет гэрчилгээний карт
+  enrollable       Boolean  @default(true) // false → "Холбоо барих"
+  badge            String   @default("") // "Шинэ", "Эрэлттэй"
+  description      String   @default("")
+  features         String   @default("[]") // JSON массив (давуу талууд)
+  sortOrder        Int      @default(0)
+  isActive         Boolean  @default(true)
+
+  enrollments Enrollment[]
+}
+
 // ── Курсийн бүртгэл ──────────────────────────────────────────────
 model Enrollment {
-  id          String    @id @default(cuid())
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courseId    String
-  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  status      String    @default("PENDING_PAYMENT") // PENDING_PAYMENT | ACTIVE | COMPLETED
-  paymentId   String?
-  completedAt DateTime?
-  createdAt   DateTime  @default(now())
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId         String
+  course           Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  packageId        String?
+  package          Package?  @relation(fields: [packageId], references: [id])
+  packageCode      String? // тэмдэглэлд (BASIC/STANDARD/PRO)
+  includesPractice Boolean   @default(true) // багцаас хамаарна
+  amountPaid       Int       @default(0)
+  status           String    @default("PENDING_PAYMENT") // PENDING_PAYMENT | ACTIVE | COMPLETED
+  paymentId        String?
+  completedAt      DateTime?
+  createdAt        DateTime  @default(now())
 
   @@unique([userId, courseId])
 }

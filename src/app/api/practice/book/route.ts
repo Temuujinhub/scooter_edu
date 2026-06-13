@@ -21,6 +21,17 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(body);
   if (!parsed.success) return fail('Жолооны курс ба огноогоо сонгоно уу');
 
+  // Багц практик дадлага агуулдаг эсэх
+  const enrollment = await prisma.enrollment.findFirst({
+    where: { userId, status: { in: ['ACTIVE', 'COMPLETED'] } },
+  });
+  if (enrollment && !enrollment.includesPractice) {
+    return fail(
+      'Таны багц практик дадлага агуулаагүй байна. Стандарт/Pro багц руу шинэчилнэ үү.',
+      403
+    );
+  }
+
   // Шалгалтад тэнцсэн эсэх
   const passed = await prisma.examAttempt.findFirst({
     where: { userId, status: 'PASSED' },

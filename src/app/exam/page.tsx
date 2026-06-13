@@ -34,6 +34,7 @@ interface ExamResult {
   total: number;
   percent: number;
   passScore: number;
+  certificate?: { certNumber: string } | null;
   review: { questionMn: string; correctKey: string; userKey: string | null; isRight: boolean; explanationMn: string }[];
 }
 
@@ -311,9 +312,15 @@ function ExamResultView({ result, onRetry }: { result: ExamResult; onRetry: () =
         </div>
         <div className="p-5">
           {result.passed ? (
-            <Button variant="success" className="w-full" onClick={() => router.push('/practice')}>
-              Практик дадлага захиалах
-            </Button>
+            result.certificate ? (
+              <Button variant="success" className="w-full" onClick={() => router.push('/certificates')}>
+                Дижитал гэрчилгээ авах
+              </Button>
+            ) : (
+              <Button variant="success" className="w-full" onClick={() => router.push('/practice')}>
+                Практик дадлага захиалах
+              </Button>
+            )
           ) : (
             <Button variant="outline" className="w-full" onClick={onRetry}>
               <RotateCcw className="h-4 w-4" /> Буцах

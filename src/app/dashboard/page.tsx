@@ -67,13 +67,17 @@ function DashboardContent({ data }: { data: DashData }) {
       href: '/exam',
       icon: ClipboardCheck,
     },
-    {
-      key: 'practice',
-      label: 'Практик дадлага хийх',
-      done: journey.practiceDone,
-      href: '/practice',
-      icon: MapPin,
-    },
+    ...(journey.includesPractice
+      ? [
+          {
+            key: 'practice',
+            label: 'Практик дадлага хийх',
+            done: journey.practiceDone,
+            href: '/practice',
+            icon: MapPin,
+          },
+        ]
+      : []),
     {
       key: 'done',
       label: 'Дижитал гэрчилгээ авах',

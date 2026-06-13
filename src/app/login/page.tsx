@@ -200,11 +200,6 @@ function StaffLogin({ router }: { router: ReturnType<typeof useRouter> }) {
       <Button className="w-full" onClick={login} loading={loading} disabled={!phone || !password}>
         Нэвтрэх
       </Button>
-      <Alert variant="warning" className="text-xs">
-        <strong>Тест эрхүүд:</strong>
-        <br /> Админ: <span className="font-mono">99000000 / admin123</span>
-        <br /> Багш: <span className="font-mono">99001111 / teacher123</span>
-      </Alert>
     </div>
   );
 }

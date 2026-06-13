@@ -8,6 +8,7 @@ import {
   questions,
   partners,
   drivingSchools,
+  packages,
 } from './data';
 
 const prisma = new PrismaClient();
@@ -19,17 +20,34 @@ function randomKey(prefix: string): string {
   return `${prefix}_${s}`;
 }
 
+// Багцыг үүсгэх (code-оор). Зөвхөн байхгүй багцыг нэмнэ —
+// админы засварыг (үнэ г.м) дарж бичихгүй. Live DB-д ч аюулгүй.
+async function seedPackages() {
+  let created = 0;
+  for (const p of packages) {
+    const exists = await prisma.package.findUnique({ where: { code: p.code } });
+    if (exists) continue;
+    await prisma.package.create({
+      data: { ...p, features: JSON.stringify(p.features) },
+    });
+    created++;
+  }
+  console.log(`✅ Багц: ${created} шинээр нэмэгдсэн (${packages.length - created} аль хэдийн байна)`);
+}
+
 async function main() {
-  // SEED_IF_EMPTY=true үед (Vercel build) — өгөгдөл аль хэдийн байвал алгасна.
-  // Ингэснээр production дахь хэрэглэгчийн өгөгдлийг устгахгүй.
+  // SEED_IF_EMPTY=true үед (Vercel build):
+  //  • Багцыг үргэлж upsert хийнэ (шинэ багц аль хэдийн seed хийсэн DB-д нэмэгдэнэ)
+  //  • Үндсэн контентыг зөвхөн DB хоосон үед seed хийнэ (хэрэглэгчийн өгөгдөл хамгаалах)
   if (process.env.SEED_IF_EMPTY === 'true') {
-    const existing = await prisma.course.count().catch(() => -1);
-    if (existing > 0) {
-      console.log(`⏭️  Seed алгаслаа (${existing} курс аль хэдийн байна)`);
-      return;
-    }
+    const existing = await prisma.course.count().catch(() => -2);
     if (existing < 0) {
       console.log('⏭️  Seed алгаслаа (DB бэлэн биш)');
+      return;
+    }
+    await seedPackages();
+    if (existing > 0) {
+      console.log(`⏭️  Контент seed алгаслаа (${existing} курс аль хэдийн байна)`);
       return;
     }
   }
@@ -44,6 +62,7 @@ async function main() {
   await prisma.examAttempt.deleteMany();
   await prisma.moduleProgress.deleteMany();
   await prisma.enrollment.deleteMany();
+  await prisma.package.deleteMany();
   await prisma.payment.deleteMany();
   await prisma.question.deleteMany();
   await prisma.module.deleteMany();
@@ -110,6 +129,9 @@ async function main() {
   }
   console.log(`✅ ${partners.length} хамтрагч компани`);
 
+  // ── Үнийн багцууд ──
+  await seedPackages();
+
   // ── Курс + Модуль + Асуулт ──
   const course = await prisma.course.create({
     data: {
@@ -123,22 +145,6 @@ async function main() {
       coverImage: '/images/course-cover.svg',
       isActive: true,
       sortOrder: 1,
-    },
-  });
-
-  // Үндсэн (хямд) курс
-  await prisma.course.create({
-    data: {
-      code: 'SCE-BASIC',
-      titleMn: 'Скүүтэр Жолоодлогын Үндсэн Курс',
-      descriptionMn:
-        '4 модулийн онлайн хичээл болон онлайн шалгалт. Хурдан, хямд эхлэлт.',
-      price: 15000,
-      durationHours: 1.5,
-      level: 'Анхан шат',
-      coverImage: '/images/course-cover.svg',
-      isActive: true,
-      sortOrder: 2,
     },
   });
 
@@ -192,8 +198,17 @@ async function main() {
       isTestUser: true,
     },
   });
+  const standardPkg = await prisma.package.findUnique({ where: { code: 'STANDARD' } });
   await prisma.enrollment.create({
-    data: { userId: demo.id, courseId: course.id, status: 'ACTIVE' },
+    data: {
+      userId: demo.id,
+      courseId: course.id,
+      packageId: standardPkg?.id,
+      packageCode: 'STANDARD',
+      includesPractice: true,
+      amountPaid: standardPkg?.price ?? 29900,
+      status: 'ACTIVE',
+    },
   });
   console.log(`✅ Демо суралцагч: ${demo.phone}`);
 
