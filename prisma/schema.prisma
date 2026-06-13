@@ -299,6 +299,13 @@ model Payment {
   createdAt     DateTime  @default(now())
 }
 
+// ── Сайтын тохиргоо (hero, footer, гэрчилгээ г.м — админаас засна) ─
+model SiteSetting {
+  key       String   @id // hero_title, contact_email г.м
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
 // ── OTP код (утасны баталгаажуулалт) ─────────────────────────────
 model OtpCode {
   id        String   @id @default(cuid())

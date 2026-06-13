@@ -13,6 +13,8 @@ import {
   CreditCard,
   QrCode,
   Tags,
+  Settings,
+  Plug,
 } from 'lucide-react';
 import type { NavItem } from './app-shell';
 
@@ -32,9 +34,11 @@ export const adminNav: NavItem[] = [
   { href: '/admin/packages', label: 'Үнийн багцууд', icon: Tags },
   { href: '/admin/questions', label: 'Асуултын сан', icon: HelpCircle },
   { href: '/admin/partners', label: 'Хамтрагчид', icon: Building2 },
+  { href: '/admin/api', label: 'API холболт', icon: Plug },
   { href: '/admin/certificates', label: 'Гэрчилгээ', icon: Award },
   { href: '/admin/payments', label: 'Төлбөр', icon: CreditCard },
   { href: '/admin/reports', label: 'Тайлан', icon: BarChart3 },
+  { href: '/admin/settings', label: 'Сайтын тохиргоо', icon: Settings },
 ];
 
 export const instructorNav: NavItem[] = [

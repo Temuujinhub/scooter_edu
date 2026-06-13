@@ -1,16 +1,15 @@
 import Link from 'next/link';
 import { BrandLogo } from './brand-logo';
+import { getSettings } from '@/lib/settings';
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const s = await getSettings();
   return (
     <footer className="border-t border-white/10 bg-brand-950 text-brand-100">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 md:grid-cols-4">
         <div className="md:col-span-2">
           <BrandLogo variant="light" />
-          <p className="mt-4 max-w-sm text-sm text-brand-200/80">
-            Монгол Улсын цахилгаан скүүтэр хэрэглэгчдийг аюулгүй жолоодогч болгох — онлайнаар
-            хурдан, офлайнаар баталгаатай.
-          </p>
+          <p className="mt-4 max-w-sm text-sm text-brand-200/80">{s.footer_tagline}</p>
           <p className="mt-4 text-xs text-brand-300/60">
             © {new Date().getFullYear()} MediaProfessional LLC. Бүх эрх хуулиар хамгаалагдсан.
           </p>
@@ -29,9 +28,9 @@ export function SiteFooter() {
         <div>
           <h4 className="mb-3 text-sm font-semibold text-white">Холбоо барих</h4>
           <ul className="space-y-2 text-sm text-brand-200/80">
-            <li>info@scooteredu.mn</li>
-            <li>7011-0000</li>
-            <li>Улаанбаатар, Монгол</li>
+            <li>{s.contact_email}</li>
+            <li>{s.contact_phone}</li>
+            <li>{s.contact_address}</li>
           </ul>
         </div>
       </div>

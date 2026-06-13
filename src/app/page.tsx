@@ -4,6 +4,7 @@ import { SiteNav } from '@/components/site-nav';
 import { SiteFooter } from '@/components/site-footer';
 import { ScooterIcon } from '@/components/brand-logo';
 import { formatMnt, safeJson } from '@/lib/utils';
+import { getSettings } from '@/lib/settings';
 import {
   ShieldCheck,
   Smartphone,
@@ -39,10 +40,16 @@ const journey = [
 ];
 
 export default async function HomePage() {
-  const [packages, partners] = await Promise.all([
+  const [packages, partners, s] = await Promise.all([
     prisma.package.findMany({ where: { isActive: true }, orderBy: { sortOrder: 'asc' } }),
     prisma.partner.findMany({ where: { isActive: true }, orderBy: { createdAt: 'asc' } }),
+    getSettings(),
   ]);
+  const heroStats = [
+    { v: s.hero_stat1_value, l: s.hero_stat1_label },
+    { v: s.hero_stat2_value, l: s.hero_stat2_label },
+    { v: s.hero_stat3_value, l: s.hero_stat3_label },
+  ];
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -54,16 +61,13 @@ export default async function HomePage() {
           <div className="animate-fade-up">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-brand-100">
               <span className="h-2 w-2 rounded-full bg-accent-400" />
-              2026 оны шинэ дүрэмд бэлэн
+              {s.hero_badge}
             </span>
             <h1 className="mt-5 text-4xl font-extrabold leading-tight tracking-tight text-white md:text-5xl">
-              Цахилгаан скүүтэрээ{' '}
-              <span className="text-accent-400">аюулгүй</span> жолоодож сур
+              {s.hero_title_pre}{' '}
+              <span className="text-accent-400">{s.hero_title_accent}</span> {s.hero_title_post}
             </h1>
-            <p className="mt-5 max-w-lg text-lg text-brand-100/90">
-              Монгол Улсын анхны e-scooter онлайн сургалт ба дижитал гэрчилгээний платформ.
-              Онлайнаар хурдан, офлайнаар баталгаатай — 90 минутад.
-            </p>
+            <p className="mt-5 max-w-lg text-lg text-brand-100/90">{s.hero_subtitle}</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href="/register"
@@ -80,14 +84,10 @@ export default async function HomePage() {
             </div>
 
             <div className="mt-10 grid max-w-md grid-cols-3 gap-4">
-              {[
-                { v: '20,000+', l: 'УБ дахь скүүтэр' },
-                { v: '4', l: 'Сургалтын модуль' },
-                { v: '7', l: 'Хамтрагч апп' },
-              ].map((s) => (
-                <div key={s.l}>
-                  <div className="text-2xl font-extrabold text-white">{s.v}</div>
-                  <div className="text-xs text-brand-200/80">{s.l}</div>
+              {heroStats.map((stat) => (
+                <div key={stat.l}>
+                  <div className="text-2xl font-extrabold text-white">{stat.v}</div>
+                  <div className="text-xs text-brand-200/80">{stat.l}</div>
                 </div>
               ))}
             </div>
