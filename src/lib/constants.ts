@@ -11,7 +11,7 @@ export const PRACTICE_ELEMENTS = [
   { code: 'G', titleMn: 'Замын хөдөлгөөнд нэгдэх', criteria: 'Зөв ажиглалт, эргэлт' },
 ] as const;
 
-// Шалгалтын параметр (Судалгааны 8.1)
+// Шалгалтын параметр (Судалгааны 8.1) — 6 модульд тохируулсан
 export const EXAM_CONFIG = {
   totalQuestions: 30,
   durationMin: 30,
@@ -20,7 +20,7 @@ export const EXAM_CONFIG = {
   maxAttempts: 3,
   retryDelayHours: 3,
   lockoutHours: 24,
-  distribution: { M1: 8, M2: 8, M3: 7, M4: 7 },
+  distribution: { M1: 5, M2: 5, M3: 5, M4: 5, M5: 5, M6: 5 },
 };
 
 // Сертификатын хүчинтэй хугацаа (жил)

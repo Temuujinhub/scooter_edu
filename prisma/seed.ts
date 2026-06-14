@@ -9,6 +9,7 @@ import {
   partners,
   drivingSchools,
   packages,
+  CONTENT_VERSION,
 } from './data';
 
 const prisma = new PrismaClient();
@@ -33,6 +34,52 @@ async function seedPackages() {
     created++;
   }
   console.log(`✅ Багц: ${created} шинээр нэмэгдсэн (${packages.length - created} аль хэдийн байна)`);
+}
+
+// Модуль + асуултыг үүсгэх (хуучныг устгаад шинээр). Контент шинэчлэхэд ашиглана.
+async function seedCurriculumContent(courseId: string) {
+  await prisma.module.deleteMany({ where: { courseId } }); // cascade: question, progress
+  let total = 0;
+  for (const m of modules) {
+    const module = await prisma.module.create({
+      data: {
+        courseId,
+        moduleNumber: m.moduleNumber,
+        titleMn: m.titleMn,
+        summaryMn: m.summaryMn,
+        contentHtml: m.contentHtml,
+        keyPoints: JSON.stringify(m.keyPoints),
+        durationMin: m.durationMin,
+        sortOrder: m.moduleNumber,
+        isActive: true,
+      },
+    });
+    const mq = questions.filter((q) => q.moduleCode === m.moduleCode);
+    for (const q of mq) {
+      await prisma.question.create({
+        data: {
+          moduleId: module.id,
+          moduleCode: q.moduleCode,
+          questionMn: q.questionMn,
+          options: JSON.stringify(q.options),
+          explanationMn: q.explanationMn,
+          difficulty: q.difficulty,
+          tags: JSON.stringify(q.tags),
+          isActive: true,
+        },
+      });
+      total++;
+    }
+  }
+  return { moduleCount: modules.length, questionCount: total };
+}
+
+async function setContentVersion() {
+  await prisma.siteSetting.upsert({
+    where: { key: 'content_version' },
+    create: { key: 'content_version', value: CONTENT_VERSION },
+    update: { value: CONTENT_VERSION },
+  });
 }
 
 // Дадлагад бэлэн демо суралцагч (практик хэсгийг шууд харахад).
@@ -119,9 +166,22 @@ async function main() {
       return;
     }
     await seedPackages();
-    await seedDemoPractice(); // 99091911-ийг дадлагад бэлэн болгох (live DB-д ч)
+
     if (existing > 0) {
-      console.log(`⏭️  Контент seed алгаслаа (${existing} курс аль хэдийн байна)`);
+      // Контентын хувилбар шинэчлэгдсэн бол модуль/асуултыг шинэчилнэ
+      const cv = await prisma.siteSetting
+        .findUnique({ where: { key: 'content_version' } })
+        .catch(() => null);
+      if (cv?.value !== CONTENT_VERSION) {
+        const course = await prisma.course.findFirst({ where: { code: 'SCE-FULL' } });
+        if (course) {
+          const c = await seedCurriculumContent(course.id);
+          await setContentVersion();
+          console.log(`✅ Контент шинэчлэв (v${CONTENT_VERSION}): ${c.moduleCount} модуль, ${c.questionCount} асуулт`);
+        }
+      }
+      await seedDemoPractice(); // 99091911-ийг дадлагад бэлэн болгох
+      console.log(`⏭️  Үндсэн seed алгаслаа (${existing} курс аль хэдийн байна)`);
       return;
     }
   }
@@ -212,7 +272,7 @@ async function main() {
       code: 'SCE-FULL',
       titleMn: 'Цахилгаан Скүүтэр Жолоодлогын Бүрэн Курс',
       descriptionMn:
-        'Монгол Улсын хууль, скүүтэрийн техник, хотын жолоодлого, ослоос сэргийлэх 4 модуль. Онлайн шалгалт болон практик дадлагаар дижитал гэрчилгээ авна.',
+        '"А" ангилалтай дүйцэхүйц 6 модуль: хууль, замын тэмдэг, тэмдэглэгээ ба дохио, хөдөлгөөний дэг журам, техник ба аюулгүй жолоодлого, осол ба анхны тусламж. Онлайн шалгалт болон практик дадлагаар дижитал гэрчилгээ авна.',
       price: 25000,
       durationHours: 1.5,
       level: 'Бүрэн',
@@ -222,40 +282,9 @@ async function main() {
     },
   });
 
-  let totalQuestions = 0;
-  for (const m of modules) {
-    const module = await prisma.module.create({
-      data: {
-        courseId: course.id,
-        moduleNumber: m.moduleNumber,
-        titleMn: m.titleMn,
-        summaryMn: m.summaryMn,
-        contentHtml: m.contentHtml,
-        keyPoints: JSON.stringify(m.keyPoints),
-        durationMin: m.durationMin,
-        sortOrder: m.moduleNumber,
-        isActive: true,
-      },
-    });
-
-    const moduleQuestions = questions.filter((q) => q.moduleCode === m.moduleCode);
-    for (const q of moduleQuestions) {
-      await prisma.question.create({
-        data: {
-          moduleId: module.id,
-          moduleCode: q.moduleCode,
-          questionMn: q.questionMn,
-          options: JSON.stringify(q.options),
-          explanationMn: q.explanationMn,
-          difficulty: q.difficulty,
-          tags: JSON.stringify(q.tags),
-          isActive: true,
-        },
-      });
-      totalQuestions++;
-    }
-  }
-  console.log(`✅ ${modules.length} модуль, ${totalQuestions} асуулт`);
+  const content = await seedCurriculumContent(course.id);
+  await setContentVersion();
+  console.log(`✅ ${content.moduleCount} модуль, ${content.questionCount} асуулт`);
 
   // ── Демо суралцагч (тест харуулахад) ──
   const demo = await prisma.user.create({

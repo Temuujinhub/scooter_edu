@@ -73,7 +73,7 @@ async function main() {
   const detail = await call(`/api/courses/${fullCourse.id}`);
   assert(detail.data.data?.enrollment?.status === 'ACTIVE', 'Бүртгэл ACTIVE болсон');
   const modules = detail.data.data.modules;
-  assert(modules.length === 4, '4 модуль байна');
+  assert(modules.length === 6, '6 модуль байна');
 
   for (const m of modules) {
     const prog = await call(`/api/modules/${m.id}/progress`, {

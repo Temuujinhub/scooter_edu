@@ -30,7 +30,7 @@ interface ModuleOpt {
   moduleNumber: number;
 }
 
-const MODULE_CODES = ['M1', 'M2', 'M3', 'M4'];
+const MODULE_CODES = ['M1', 'M2', 'M3', 'M4', 'M5', 'M6'];
 
 export default function AdminQuestionsPage() {
   const [questions, setQuestions] = useState<Question[] | null>(null);
